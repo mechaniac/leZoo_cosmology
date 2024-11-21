@@ -225,10 +225,21 @@ loadModel(
         
     }
 );
+loadModel(
+    './models/cosmology_01/spaceship_01.gltf',
+    { metalness: .7, roughness: .1, transparent: false, opacity: 0 }, // Material settings
+    './models/textures/vines_01.jpg', // aoMap
+    0, // Rotation speed
+    {
+        normalMap: './models/textures/normal_01.jpg',
+        
+    }
+);
 
 loadModel('./models/cosmology_01/houses_01.gltf', { metalness: 1, roughness: .1 }, './models/textures/vines_01.jpg');
 loadModel('./models/cosmology_01/brightFlowers_01.gltf');
 
+modelGroup.rotation.y = THREE.MathUtils.degToRad(33);
 
 // Variables to handle rotation
 let isDragging = false;
