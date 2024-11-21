@@ -37,7 +37,7 @@ scene.add(directionalLight);
 
 // Set the background image using TextureLoader
 const textureLoader = new THREE.TextureLoader();
-textureLoader.load('images/background.jpg', (texture) => {
+textureLoader.load('images/background.png', (texture) => {
     scene.background = texture;
 });
 
