@@ -37,36 +37,32 @@ scene.add(directionalLight);
 
 // Set the background image using TextureLoader
 const textureLoader = new THREE.TextureLoader();
-textureLoader.load('images/background.png', (texture) => {
+textureLoader.load('images/background.webp', (texture) => {
     scene.background = texture;
 });
 
 const envTexture = new THREE.CubeTextureLoader()
-    .setPath('./images/') // Path to the skybox textures
+    .setPath('./images/')
     .load([
-        'sky_side.jpg', 'sky_side.jpg', // Positive X, Negative X
-        'sky_top.jpg', 'sky_bottom.jpg', // Positive Y, Negative Y
-        'sky_side.jpg', 'sky_side.jpg'  // Positive Z, Negative Z
+        'sky_side.jpg', 'sky_side.jpg', 
+        'sky_top.jpg', 'sky_bottom.jpg', 
+        'sky_side.jpg', 'sky_side.jpg' 
     ]);
 
-scene.environment = envTexture; // Use the environment map for reflections
-scene.background = envTexture;  // Set the background to match the skybox
-
+scene.environment = envTexture;
+scene.background = envTexture;
 
 // Create a group to hold all models
 const modelGroup = new THREE.Group();
 scene.add(modelGroup);
 
-
-
-
-
+// Load model function
 function loadModel(
     path,
     materialSettings = { metalness: 0.5, roughness: 0.5, transparent: false, opacity: 1 },
     aoMapPath = null,
     rotationSpeed = 0,
-    maps = {} // Object to define additional maps (normalMap, bumpMap, specularMap)
+    maps = {}
 ) {
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
@@ -76,50 +72,34 @@ function loadModel(
     loader.load(
         path,
         (gltf) => {
-            // Load textures if paths are provided
             const aoMapTexture = aoMapPath ? textureLoader.load(aoMapPath) : null;
             const normalMapTexture = maps.normalMap ? textureLoader.load(maps.normalMap) : null;
             const bumpMapTexture = maps.bumpMap ? textureLoader.load(maps.bumpMap) : null;
             const specularMapTexture = maps.specularMap ? textureLoader.load(maps.specularMap) : null;
 
-            // Apply material settings and assign maps
             traverseAndApplyMaterials(gltf.scene, materialSettings, aoMapTexture, {
                 normalMap: normalMapTexture,
                 bumpMap: bumpMapTexture,
                 specularMap: specularMapTexture,
             });
 
-            // Add the model to the group
+            gltf.scene.userData.rotationSpeed = rotationSpeed;
             modelGroup.add(gltf.scene);
-
-            // Apply rotation if rotationSpeed is provided
-            if (rotationSpeed) {
-                function animateRotation() {
-                    requestAnimationFrame(animateRotation);
-                    gltf.scene.rotation.y += rotationSpeed;
-                }
-                animateRotation();
-            }
         },
-        (xhr) => {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-        },
-        (error) => {
-            console.error('An error occurred while loading the model', error);
-        }
+        (xhr) => console.log((xhr.loaded / xhr.total * 100) + '% loaded'),
+        (error) => console.error('An error occurred while loading the model', error)
     );
 }
 
-// Helper function: Traverse and apply materials
+// Traverse and apply materials
 function traverseAndApplyMaterials(scene, settings, aoMapTexture, maps) {
     scene.traverse((child) => {
         if (child.isMesh && child.material && child.material.isMeshStandardMaterial) {
             applyMaterialSettings(child.material, settings, aoMapTexture, maps);
 
-            // Ensure UV2 exists for aoMap, normalMap, bumpMap, and specularMap
             if (aoMapTexture || maps.normalMap || maps.bumpMap || maps.specularMap) {
                 if (!child.geometry.attributes.uv2) {
-                    child.geometry.setAttribute('uv2', child.geometry.attributes.uv); // Copy UV0 to UV2 if UV2 is missing
+                    child.geometry.setAttribute('uv2', child.geometry.attributes.uv);
                 }
             }
 
@@ -129,7 +109,7 @@ function traverseAndApplyMaterials(scene, settings, aoMapTexture, maps) {
     });
 }
 
-// Helper function: Apply material settings and maps
+// Apply material settings
 function applyMaterialSettings(material, settings, aoMapTexture, maps) {
     material.metalness = settings.metalness !== undefined ? settings.metalness : 0.5;
     material.roughness = settings.roughness !== undefined ? settings.roughness : 0.5;
@@ -142,147 +122,79 @@ function applyMaterialSettings(material, settings, aoMapTexture, maps) {
     }
     if (maps.normalMap) {
         material.normalMap = maps.normalMap;
-        material.normalMapType = THREE.TangentSpaceNormalMap; // Default normal map type
+        material.normalMapType = THREE.TangentSpaceNormalMap;
     }
     if (maps.bumpMap) {
         material.bumpMap = maps.bumpMap;
-        material.bumpScale = 1; // Adjust bump intensity
+        material.bumpScale = 1;
     }
 
     if (material.opacity < 1) {
         material.transparent = true;
     }
 
-    material.needsUpdate = true; // Ensure the material updates
+    material.needsUpdate = true;
 }
 
-
-// Example usage
-
-loadModel(
-    './models/cosmology_01/cosmology_01.gltf',
-    { metalness: 0.3, roughness: 0.7 }, // Material settings
-    './models/textures/vines_01.jpg', // aoMap
-    0, // No rotation
-    {
-        normalMap: './models/textures/normal_01.jpg',
-        bumpMap: './models/textures/bump_01.jpg',
-        
-    }
-);
-
-loadModel(
-    './models/cosmology_01/upperClouds_01.gltf',
-    { metalness: 0, roughness: 1, transparent: true, opacity: 0.3 }, // Material settings
-    './models/textures/vines_01.jpg', // aoMap
-    0.01, // Rotation speed
-    {
-        normalMap: './models/textures/normal_01.jpg',
-        
-    }
-);
-
-loadModel(
-    './models/cosmology_01/clouds_01.gltf',
-    { metalness: 0, roughness: 1, transparent: true, opacity: 0.3 }, // Material settings
-    './models/textures/vines_01.jpg', // aoMap
-    -0.01, // Rotation speed
-    {
-        normalMap: './models/textures/normal_01.jpg',
-        
-    }
-);
-
-loadModel(
-    './models/cosmology_01/spindle_01.gltf',
-    { metalness: 1, roughness: .1, transparent: false, opacity: 0 }, // Material settings
-    './models/textures/vines_01.jpg', // aoMap
-    -0.01, // Rotation speed
-    {
-        normalMap: './models/textures/normal_01.jpg',
-        
-    }
-);
-
-loadModel(
-    './models/cosmology_01/brightShiny_01.gltf',
-    { metalness: .4, roughness: .3, transparent: false, opacity: 0 }, // Material settings
-    './models/textures/vines_01.jpg', // aoMap
-    0, // Rotation speed
-    {
-        normalMap: './models/textures/normal_01.jpg',
-        
-    }
-);
-
-loadModel(
-    './models/cosmology_01/bodhiTree_01.gltf',
-    { metalness: .1, roughness: .4, transparent: false, opacity: 0.3 }, // Material settings
-    './models/textures/vines_01.jpg', // aoMap
-    0, // Rotation speed
-    {
-        normalMap: './models/textures/normal_01.jpg',
-        
-    }
-);
-loadModel(
-    './models/cosmology_01/spaceship_01.gltf',
-    { metalness: .7, roughness: .1, transparent: false, opacity: 0 }, // Material settings
-    './models/textures/vines_01.jpg', // aoMap
-    0, // Rotation speed
-    {
-        normalMap: './models/textures/normal_01.jpg',
-        
-    }
-);
-
+// Example model loads
+loadModel('./models/cosmology_01/cosmology_01.gltf', { metalness: 0.3, roughness: 0.7 }, './models/textures/vines_01.jpg', 0, { normalMap: './models/textures/normal_01.jpg', bumpMap: './models/textures/bump_01.jpg' });
+loadModel('./models/cosmology_01/upperClouds_01.gltf', { metalness: 0, roughness: 1, transparent: true, opacity: 0.3 }, './models/textures/vines_01.jpg', 0.01, { normalMap: './models/textures/normal_01.jpg' });
+loadModel('./models/cosmology_01/clouds_01.gltf', { metalness: 0, roughness: 1, transparent: true, opacity: 0.3 }, './models/textures/vines_01.jpg', -0.01, { normalMap: './models/textures/normal_01.jpg' });
+loadModel('./models/cosmology_01/spindle_01.gltf', { metalness: 1, roughness: .1, transparent: false, opacity: 0 }, './models/textures/vines_01.jpg', -0.01, { normalMap: './models/textures/normal_01.jpg' });
+loadModel('./models/cosmology_01/brightShiny_01.gltf', { metalness: .4, roughness: .3, transparent: false, opacity: 0 }, './models/textures/vines_01.jpg', 0, { normalMap: './models/textures/normal_01.jpg' });
+loadModel('./models/cosmology_01/bodhiTree_01.gltf', { metalness: .1, roughness: .4, transparent: false, opacity: 0.3 }, './models/textures/vines_01.jpg', 0, { normalMap: './models/textures/normal_01.jpg' });
+loadModel('./models/cosmology_01/spaceship_01.gltf', { metalness: .7, roughness: .1, transparent: false, opacity: 0 }, './models/textures/vines_01.jpg', 0, { normalMap: './models/textures/normal_01.jpg' });
 loadModel('./models/cosmology_01/houses_01.gltf', { metalness: 1, roughness: .1 }, './models/textures/vines_01.jpg');
 loadModel('./models/cosmology_01/brightFlowers_01.gltf');
 
 modelGroup.rotation.y = THREE.MathUtils.degToRad(33);
 
-// Variables to handle rotation
+// Rotation interaction variables
 let isDragging = false;
 let previousMouseX = 0;
 let velocity = 0;
-const easeFactor = 0.95;
+const easeFactor = 0.99;
 
-// Event listeners for mouse and touch interaction
-function handleDragStart(event) {
-    isDragging = true;
-    previousMouseX = event.touches ? event.touches[0].clientX : event.clientX;
+// Helper to add unified event listeners
+function addUnifiedEventListeners(target, events, handler) {
+    events.forEach(event => target.addEventListener(event, handler, { passive: false }));
 }
 
-function handleDragMove(event) {
+// Event listeners
+addUnifiedEventListeners(document, ['mousedown', 'touchstart'], (e) => {
+    isDragging = true;
+    previousMouseX = e.touches ? e.touches[0].clientX : e.clientX;
+});
+
+addUnifiedEventListeners(document, ['mousemove', 'touchmove'], (e) => {
     if (isDragging) {
-        const currentX = event.touches ? event.touches[0].clientX : event.clientX;
+        const currentX = e.touches ? e.touches[0].clientX : e.clientX;
         const deltaX = currentX - previousMouseX;
         velocity = deltaX * 0.005;
         modelGroup.rotation.y += velocity;
         previousMouseX = currentX;
     }
-}
+});
 
-function handleDragEnd() {
+addUnifiedEventListeners(document, ['mouseup', 'touchend'], () => {
     isDragging = false;
-}
+});
 
-document.addEventListener('mousedown', handleDragStart);
-document.addEventListener('mousemove', handleDragMove);
-document.addEventListener('mouseup', handleDragEnd);
-document.addEventListener('touchstart', handleDragStart);
-document.addEventListener('touchmove', handleDragMove);
-document.addEventListener('touchend', handleDragEnd);
-
-// Animation loop with easing
+// Unified animation loop
 function animate() {
     requestAnimationFrame(animate);
 
-    // Apply easing to rotation
     if (!isDragging) {
         velocity *= easeFactor;
         modelGroup.rotation.y += velocity;
     }
+
+    // Rotate individual models with their userData.rotationSpeed
+    modelGroup.children.forEach(child => {
+        if (child.userData.rotationSpeed) {
+            child.rotation.y += child.userData.rotationSpeed;
+        }
+    });
 
     renderer.render(scene, camera);
 }
