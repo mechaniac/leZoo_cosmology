@@ -146,6 +146,7 @@ loadModel('./models/cosmology_01/bodhiTree_01.gltf', { metalness: .1, roughness:
 loadModel('./models/cosmology_01/spaceship_01.gltf', { metalness: .7, roughness: .1, transparent: false, opacity: 0 }, './models/textures/vines_01.jpg', 0, { normalMap: './models/textures/normal_01.jpg' });
 loadModel('./models/cosmology_01/houses_01.gltf', { metalness: 1, roughness: .1 }, './models/textures/vines_01.jpg');
 loadModel('./models/cosmology_01/brightFlowers_01.gltf');
+// loadModel('./models/cosmology_01/testcube.gltf');
 
 modelGroup.rotation.y = THREE.MathUtils.degToRad(33);
 
@@ -153,7 +154,15 @@ modelGroup.rotation.y = THREE.MathUtils.degToRad(33);
 let isDragging = false;
 let previousMouseX = 0;
 let velocity = 0;
-const easeFactor = 0.99;
+const easeFactor = 0.9999;
+
+// Exposed parameters
+const params = {
+    easeFactor: 0.99,            // Closer to 1 = slower slowdown, so longer spin
+    dragSensitivity: 0.005,      // Sensitivity of drag motion
+    maxRotationSpeed: 0.2,      // Cap the maximum rotation speed
+    minContinuousSpeed: 0.001    // Minimum rotation speed to keep it moving
+};
 
 // Helper to add unified event listeners
 function addUnifiedEventListeners(target, events, handler) {
@@ -180,16 +189,26 @@ addUnifiedEventListeners(document, ['mouseup', 'touchend'], () => {
     isDragging = false;
 });
 
-// Unified animation loop
+// Animation loop
 function animate() {
     requestAnimationFrame(animate);
 
     if (!isDragging) {
-        velocity *= easeFactor;
+        velocity *= params.easeFactor;
+
+        // Prevent velocity from fully stopping
+        if (Math.abs(velocity) < params.minContinuousSpeed) {
+            // Maintain gentle rotation in the last direction
+            velocity = (velocity >= 0 ? 1 : -1) * params.minContinuousSpeed;
+        }
+
+        // Cap velocity
+        velocity = Math.max(Math.min(velocity, params.maxRotationSpeed), -params.maxRotationSpeed);
+
         modelGroup.rotation.y += velocity;
     }
 
-    // Rotate individual models with their userData.rotationSpeed
+    // Rotate individual models
     modelGroup.children.forEach(child => {
         if (child.userData.rotationSpeed) {
             child.rotation.y += child.userData.rotationSpeed;
